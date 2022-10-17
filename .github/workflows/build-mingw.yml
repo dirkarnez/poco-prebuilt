@@ -19,12 +19,14 @@ jobs:
       - name: git clone
         shell: cmd
         run: |
-          git clone --recursive https://github.com/dirkarnez/poco-prebuilt.git && cd poco-prebuilt && git checkout ${{ env.tagName }} &&^
+          git config --global user.name "dirkarnez" &&^
+          git config --global user.email "smalldirkalex@gmail.com" &&^
+          git clone --recursive https://dirkarnez:${{ secrets.GH_PAT }}@github.com/dirkarnez/poco-prebuilt.git && cd poco-prebuilt && git checkout ${{ env.tagName }} &&^
           git fetch origin &&^
           git cherry-pick dbd4fa012b610b3c32b8ec5369cc5f0c145fbf1d &&^
           git cherry-pick 7e1df1f049683970a72913e57bd2f83e6322747e &&^
           git cherry-pick 3f2eef0cbf9c7c909b76dbb52c5dd793bbc8e787
-      
+          
       - name: Install MSYS2
         uses: msys2/setup-msys2@v2
         with:
