@@ -1,0 +1,74 @@
+name: cpp-cmake-mingw-prebuilt-release-actions-workflow
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'c*'
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: windows-2019
+    env:
+      libraryName: poco
+      cmakeInstallationPath: poco-installation
+      tagName: poco-1.12.2-release
+      mingwTargetZip: poco-${{ github.ref_name }}-x86_64-posix-seh-rev0-8.1.0.zip
+    steps:
+      - name: git clone
+        shell: cmd
+        run: git clone --recursive https://github.com/pocoproject/poco.git && cd poco && git checkout ${{ env.tagName }}
+      
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: make autoconf automake libtool autogen perl flex bison
+          
+      - name: curl x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z
+        shell: cmd
+        run:  cd /d ${{ github.workspace }} && curl https://github.com/2641797006/c/blob/master/GCC-zip/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z?raw=true -L --output x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z && dir && 7z.exe x x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z
+        
+      - name: curl cmake-3.24.0-windows-x86_64.zip
+        shell: cmd
+        run: cd /d ${{ github.workspace }} && curl https://github.com/Kitware/CMake/releases/download/v3.24.0/cmake-3.24.0-windows-x86_64.zip -L --output cmake-3.24.0-windows-x86_64.zip && dir && 7z.exe x cmake-3.24.0-windows-x86_64.zip
+      
+      - name: curl openssl-v3.0.5-x86_64-posix-seh-rev0-8.1.0.zip
+        shell: cmd
+        run: cd /d ${{ github.workspace }} && curl https://github.com/dirkarnez/openssl-prebuilt/releases/download/v3.0.5/openssl-v3.0.5-x86_64-posix-seh-rev0-8.1.0.zip -L --output openssl-v3.0.5-x86_64-posix-seh-rev0-8.1.0.zip && dir && 7z.exe x openssl-v3.0.5-x86_64-posix-seh-rev0-8.1.0.zip -o"${{ github.workspace }}\openssl-v3.0.5-x86_64-posix-seh-rev0-8.1.0"
+        
+      - name: set PATH, check mingw version, cmake generate, build and install
+        shell: msys2 {0}
+        run: |
+            workspace=$(pwd) &&
+            export PATH="$workspace/mingw64:$workspace/mingw64/bin:$workspace/cmake-3.24.0-windows-x86_64/bin:$workspace/msys64/usr/bin:/usr/bin" &&
+            cd poco && 
+            cmake.exe -G "MinGW Makefiles" -DCMAKE_MC_COMPILER="$workspace/mingw64/bin/windmc.exe"  \
+            -DOpenSSL_DIR="$workspace/openssl-v3.0.5-x86_64-posix-seh-rev0-8.1.0" \
+            -DCMAKE_VERBOSE_MAKEFILE=ON \
+            -DENABLE_PAGECOMPILER=OFF \
+            -DENABLE_ACTIVERECORD_COMPILER=OFF \
+            -DENABLE_PAGECOMPILER_FILE2PAGE=OFF \
+            -DENABLE_TESTS=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_INSTALL_PREFIX="build/${{ env.cmakeInstallationPath }}" \
+            -B./build &&
+            cd build && 
+            cmake --build . --config Release && 
+            cmake --install . 
+            
+      - name: Archive Release
+        uses: thedoctor0/zip-release@master
+        with:
+          type: 'zip'
+          directory: "poco/build/${{ env.cmakeInstallationPath }}"
+          filename: "${{ env.mingwTargetZip }}"
+          
+      - name: Release prebuilt
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "poco/build/${{ env.cmakeInstallationPath }}/${{ env.mingwTargetZip }}"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
