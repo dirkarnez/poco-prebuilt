@@ -19,7 +19,7 @@ jobs:
       - name: git clone
         shell: cmd
         run: |
-          git clone --recursive https://github.com/pocoproject/poco.git && cd poco && git checkout ${{ env.tagName }} &&^
+          git clone --recursive https://github.com/dirkarnez/poco-prebuilt.git && cd poco-prebuilt && git checkout ${{ env.tagName }} &&^
           git fetch origin &&^
           git cherry-pick dbd4fa012b610b3c32b8ec5369cc5f0c145fbf1d &&^
           git cherry-pick 7e1df1f049683970a72913e57bd2f83e6322747e &&^
@@ -48,7 +48,7 @@ jobs:
         run: |
             workspace=$(pwd) &&
             export PATH="$workspace/mingw64:$workspace/mingw64/bin:$workspace/cmake-3.24.0-windows-x86_64/bin:$workspace/msys64/usr/bin:/usr/bin" &&
-            cd poco && 
+            cd poco-prebuilt && 
             cmake.exe -G "MinGW Makefiles" -DCMAKE_MC_COMPILER="$workspace/mingw64/bin/windmc.exe"  \
             -DOpenSSL_DIR="$workspace/openssl-v3.0.5-x86_64-posix-seh-rev0-8.1.0" \
             -DCMAKE_VERBOSE_MAKEFILE=ON \
@@ -68,12 +68,12 @@ jobs:
         uses: thedoctor0/zip-release@master
         with:
           type: 'zip'
-          directory: "poco/build/${{ env.cmakeInstallationPath }}"
+          directory: "poco-prebuilt/build/${{ env.cmakeInstallationPath }}"
           filename: "${{ env.mingwTargetZip }}"
           
       - name: Release prebuilt
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "poco/build/${{ env.cmakeInstallationPath }}/${{ env.mingwTargetZip }}"
+          artifacts: "poco-prebuilt/build/${{ env.cmakeInstallationPath }}/${{ env.mingwTargetZip }}"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
