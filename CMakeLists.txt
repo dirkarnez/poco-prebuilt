@@ -89,9 +89,9 @@ option(ENABLE_NETSSL_WIN "Enable NetSSL Windows" OFF)
 option(FORCE_OPENSSL "Force usage of OpenSSL even under windows" OFF)
 
 if(ENABLE_CRYPTO OR ENABLE_NETSSL OR ENABLE_JWT)
-	find_package(OpenSSL REQUIRED)
+	find_package(OpenSSL CONFIG REQUIRED)
 else()
-	find_package(OpenSSL)
+	find_package(OpenSSL CONFIG)
 endif()
 
 if(OPENSSL_FOUND)
